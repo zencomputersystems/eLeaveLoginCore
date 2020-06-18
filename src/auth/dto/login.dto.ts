@@ -10,21 +10,23 @@ import { ApiProperty } from '@nestjs/swagger';
 export class LoginDto {
   /**
    * Data login - email
-   *
+   *, description: 'Email id account'
+   * 
    * @type {string}
    * @memberof LoginDto
    */
-  @ApiProperty({ description: 'Email id account', example: 'tarmimi@zen.com.my' })
+  @ApiProperty({ name: 'email', enum: ['tarmimi@zen.com.my'] })
   @IsNotEmpty()
   readonly email: string;
 
   /**
    * Data login - password
+   * description: 'Password for email account',
    *
    * @type {string}
    * @memberof LoginDto
    */
-  @ApiProperty({ description: 'Password for email account', example: 'P@ss1234' })
+  @ApiProperty({ name: 'password', enum: ['P@ss1234'] })
   @IsNotEmpty()
   readonly password: string;
 
