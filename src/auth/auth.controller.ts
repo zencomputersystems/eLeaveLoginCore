@@ -38,7 +38,7 @@ export class AuthController {
    * @memberof AuthController
    */
   @Post('login')
-  @ApiOperation({ description: 'Login and verify' })
+  @ApiOperation({ title: 'Login and verify', description: 'Login and verify' })
   public checkLoginType(@Body() loginDTO: LoginDto, @Req() req, @Res() result: Response) {
     let baseUrlLogin = `${req.headers.origin}${req.url}`; // 'http://zencore.zen.com.my:3000/api/auth/login/';
     let urlAD = baseUrlLogin + '/ad';
@@ -82,7 +82,7 @@ export class AuthController {
    * @memberof AuthController
    */
   @Post('login/ad')
-  @ApiOperation({ description: 'Login ad' })
+  @ApiOperation({ title: 'Login ad', description: 'Login ad' })
   @UseGuards(AuthGuard('ad'))
   public async ad(@Body() loginDTO: LoginDto, @Req() req) {
     return await this.authService.createToken([req.user, 'ad']);
@@ -98,7 +98,7 @@ export class AuthController {
    * @memberof AuthController
    */
   @Post('login/local')
-  @ApiOperation({ description: 'Login email' })
+  @ApiOperation({ title: 'Login email', description: 'Login email' })
   @UseGuards(AuthGuard('local'))
   public async local(@Body() loginDTO: LoginDto, @Req() req) {
     return await this.authService.createToken([req.user, 'local']);

@@ -19,8 +19,10 @@ async function bootstrap() {
     .setDescription('This is API for leave service')
     .setVersion('1.0')
     .addTag('leave')
-    .addBearerAuth({ in: 'header', type: 'apiKey', name: 'Authorization' })
+    // .addBearerAuth({ in: 'header', type: 'apiKey', name: 'Authorization' })
     // .addOAuth2({ in: 'body', type: 'apiKey', name: 'Insight' })
+    .addBearerAuth('Authorization', 'header', 'apiKey')
+    .setSchemes('http', 'https')
     .build();
 
   const document = SwaggerModule.createDocument(app, options);

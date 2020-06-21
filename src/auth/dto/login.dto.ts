@@ -1,6 +1,6 @@
 
 import { IsNotEmpty } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiModelProperty } from '@nestjs/swagger';
 /**
  * Data for login
  *
@@ -15,7 +15,7 @@ export class LoginDto {
    * @type {string}
    * @memberof LoginDto
    */
-  @ApiProperty({ name: 'email', enum: ['tarmimi@zen.com.my'] })
+  @ApiModelProperty({ description: 'Email id account', example: 'tarmimi@zen.com.my' })
   @IsNotEmpty()
   readonly email: string;
 
@@ -26,7 +26,7 @@ export class LoginDto {
    * @type {string}
    * @memberof LoginDto
    */
-  @ApiProperty({ name: 'password', enum: ['P@ss1234'] })
+  @ApiModelProperty({ description: 'Password for email account', example: 'P@ss1234' })
   @IsNotEmpty()
   readonly password: string;
 
