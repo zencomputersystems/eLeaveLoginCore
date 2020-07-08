@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { sign } from 'jsonwebtoken';
-import { AuthDbService } from './auth.db.service';
 import { UserService } from '../user/user.service';
+import { UserprofileDbService, AuthDbService } from '../common/db/table.db.service';
 
 /**
  * Service for auth
@@ -13,10 +13,15 @@ import { UserService } from '../user/user.service';
 export class AuthService {
   /**
    *Creates an instance of AuthService.
-   * @param {UserService} userService
+   * @param {UserService} userService User service to find user
+   * @param {AuthDbService} authDbService auth db service to get login type
    * @memberof AuthService
    */
-  constructor(public readonly userService: UserService, private readonly authDbService: AuthDbService) { }
+  constructor(
+    public readonly userService: UserService,
+    private readonly authDbService: AuthDbService,
+    public readonly userprofileDbService: UserprofileDbService
+  ) { }
 
   /**
    * Method auth
@@ -43,9 +48,25 @@ export class AuthService {
    * @memberof AuthService
    */
   public async logIn(email, password) {
+    /** 
+     * The atob already done from the login. so we have plain password here. 
+     * we need to verify as cryptojs.sha256. right now db encryption is if form of cryptojs.aes of cryptojs.sha256 with a key */
+
     return await this.userService.findOne(email, password)
       .then(async user => {
-        const result = user.data.resource.length > 0 ? Promise.resolve(user.data.resource[0]) : Promise.reject(new UnauthorizedException('Invalid Credential'))
+        // encrypt plain password to sha256
+        var CryptoJS = require("crypto-js");
+        password = CryptoJS.SHA256(password.trim()).toString(CryptoJS.enc.Hex);
+        // const result = user.data.resource.length > 0 ? Promise.resolve(user.data.resource[0]) : Promise.reject(new UnauthorizedException('Invalid Credential'))
+        let result;
+        if (user.data.resource.length > 0) {
+          // decrypt aes to form as sha256
+          const dbPass = CryptoJS.AES.decrypt(user.data.resource[0].PASSWORD, 'secret key 122').toString(CryptoJS.enc.Utf8);
+          result = dbPass === password ? Promise.resolve(user.data.resource[0]) : Promise.reject(new UnauthorizedException('Invalid Credential'));
+        } else {
+          result = Promise.reject(new UnauthorizedException('Invalid Credential'))
+        }
+
         return result;
       })
   }
@@ -59,11 +80,20 @@ export class AuthService {
    */
   public async adLogin(data) {
 
-    return await this.userService.findByFilterV2([], ['(LOGIN_ID=' + data._json.userPrincipalName + ')']).toPromise()
+    return await this.userService.userDbService.findByFilterV2([], ['(LOGIN_ID=' + data._json.userPrincipalName + ')']).toPromise()
       .then(async user => {
-        let statusTenant = await this.authDbService.findByFilterV2([], ['(SUBSCRIPTION_GUID=' + user[0].TENANT_GUID + ')']).toPromise();
+        let subsId = await this.userprofileDbService.findByFilterV2(['SUBSCRIPTION_GUID'], ['(USER_GUID=' + user[0].USER_GUID + ')']).toPromise();
+        return { user, subsId };
+      })
+      .then(async sub => {
+        let { user, subsId } = sub;
+        let statusTenant = await this.authDbService.findByFilterV2([], ['(CUSTOMER_GUID=' + user[0].TENANT_GUID + ')', '(SUBSCRIPTION_GUID=' + subsId[0].SUBSCRIPTION_GUID + ')']).toPromise();
         return { user, statusTenant };
       })
+      // .then(async user => {
+      //   let statusTenant = await this.authDbService.findByFilterV2([], ['(SUBSCRIPTION_GUID=' + user[0].TENANT_GUID + ')']).toPromise();
+      //   return { user, statusTenant };
+      // })
       .then(async result => {
         let { user, statusTenant } = result;
         if (statusTenant[0].STATUS == 1) {
@@ -85,7 +115,7 @@ export class AuthService {
    * @returns
    * @memberof AuthService
    */
-  public async createToken([signedUser, typeLogin]) {
+  public async createToken([signedUser, typeLogin, roleUser]) {
     // 3300(55m) 28800(8h) 600(10m)
     // 32400(9h)
     const expiresIn = 32400, secretOrKey = 'this_is_secret';
@@ -98,6 +128,7 @@ export class AuthService {
     return {
       expires_in: expiresIn,
       login_type: typeLogin,
+      admin_profile: roleUser,
       access_token: await sign(user, secretOrKey, { expiresIn })
     }
   }
@@ -113,7 +144,12 @@ export class AuthService {
   public async verify(payload) {
     return await this.userService.findOneByPayload(payload)
       .then(async user => {
-        let statusTenant = await this.authDbService.findByFilterV2([], ['(SUBSCRIPTION_GUID=' + user.data.resource[0].TENANT_GUID + ')']).toPromise();
+        let subsId = await this.userprofileDbService.findByFilterV2(['SUBSCRIPTION_GUID'], ['(USER_GUID=' + user.data.resource[0].USER_GUID + ')']).toPromise();
+        return { user, subsId };
+      })
+      .then(async sub => {
+        let { user, subsId } = sub;
+        let statusTenant = await this.authDbService.findByFilterV2([], ['(CUSTOMER_GUID=' + user.data.resource[0].TENANT_GUID + ')', '(SUBSCRIPTION_GUID=' + subsId[0].SUBSCRIPTION_GUID + ')']).toPromise();
         return { user, statusTenant };
       })
       .then(async result => {

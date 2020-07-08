@@ -1,11 +1,23 @@
-import { Controller, Req, Post, UseGuards, Body, Res, HttpService, UnauthorizedException } from '@nestjs/common';
+import { Controller, Req, Post, UseGuards, Body, Param, Res, UnauthorizedException, HttpService, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginDto } from './dto/login.dto';
 import { ApiOperation } from '@nestjs/swagger';
+import { map, mergeMap } from 'rxjs/operators';
 import { Response } from 'express';
-import { ProfileDefaultDbService } from './profile-default.db.service';
-import { mergeMap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { ProfileDefaultDbService } from '../common/db/table.db.service';
+import { RoleService } from './role.service';
+import { runServiceCallback } from '../common/helper/basic-function';
+/** atob decryption */
+var atob = require('atob');
+/** dot env library */
+const dotenv = require('dotenv');
+dotenv.config();
+
+/** XMLparser from zen library  */
+var { convertXMLToJson } = require('@zencloudservices/xmlparser');
+
 
 /**
  * Controller for auth
@@ -19,18 +31,16 @@ export class AuthController {
   /**
    *Creates an instance of AuthController.
    * @param {AuthService} authService
-   * @param {ProfileDefaultDbService} profileDefaultDbService
-   * @param {HttpService} httpService
    * @memberof AuthController
    */
   constructor(
     private readonly authService: AuthService,
     private readonly profileDefaultDbService: ProfileDefaultDbService,
-    private readonly httpService: HttpService
+    private readonly roleService: RoleService
   ) { }
 
   /**
-   * Login and verify both ad and local
+   * Login for ad and local merged
    *
    * @param {LoginDto} loginDTO
    * @param {*} req
@@ -38,15 +48,21 @@ export class AuthController {
    * @memberof AuthController
    */
   @Post('login')
-  @ApiOperation({ title: 'Login and verify', description: 'Login and verify' })
+  @ApiOperation({ title: 'Login and verify' })
   public checkLoginType(@Body() loginDTO: LoginDto, @Req() req, @Res() result: Response) {
-    let baseUrlLogin = `${req.headers.origin}${req.url}`; // 'http://zencore.zen.com.my:3000/api/auth/login/';
-    let urlAD = baseUrlLogin + '/ad';
-    let urlLocal = baseUrlLogin + '/local';
+    loginDTO.password = atob(loginDTO.password);
 
-    this.authService.userService.findByFilterV2(['EMAIL', 'TENANT_GUID'], [`(LOGIN_ID=${loginDTO.email})`]).pipe(
+    let baseUrlLogin = process.env.URL_API + '/api/auth/login/';
+    // let baseUrlLogin = 'http://localhost:3000/api/auth/login/';
+    let urlAD = baseUrlLogin + 'ad';
+    let urlLocal = baseUrlLogin + 'email';
+    console.log(urlAD + '-' + urlLocal);
+    // console.log(loginDTO.email + '-' + loginDTO.password);
+
+    this.authService.userService.userDbService.findByFilterV2(['EMAIL', 'TENANT_GUID'], [`(LOGIN_ID=${loginDTO.email})`]).pipe(
       mergeMap(res => {
         return this.profileDefaultDbService.findByFilterV2([], [`(TENANT_GUID=${res[0].TENANT_GUID})`]);
+        // return this.authDbService.findByFilterV2([], [`(SUBSCRIPTION_GUID=${res[0].TENANT_GUID})`]);
       })
     ).subscribe(
       async data => {
@@ -58,23 +74,23 @@ export class AuthController {
           url = urlLocal;
         }
 
-        this.httpService.post(url, loginDTO).subscribe(
+        this.profileDefaultDbService.httpService.post(url, loginDTO).subscribe(
           data => {
             result.send(data.data);
           }, err => {
-            result.send(new UnauthorizedException('Invalid Credential'));
+            result.status(HttpStatus.UNAUTHORIZED).send(new UnauthorizedException('Invalid Credential'));
           }
         );
 
       },
       err => {
-        result.send(new UnauthorizedException('Invalid Credential'));
+        result.status(HttpStatus.UNAUTHORIZED).send(new UnauthorizedException('Invalid Credential'));
       }
     );
   }
 
   /**
-   * AD
+   * ad
    *
    * @param {LoginDto} loginDTO
    * @param {*} req
@@ -82,26 +98,48 @@ export class AuthController {
    * @memberof AuthController
    */
   @Post('login/ad')
-  @ApiOperation({ title: 'Login ad', description: 'Login ad' })
+  @ApiOperation({ title: 'Login ad' })
   @UseGuards(AuthGuard('ad'))
   public async ad(@Body() loginDTO: LoginDto, @Req() req) {
-    return await this.authService.createToken([req.user, 'ad']);
+    let temp = await this.getRole([req.user]);
+    return await this.authService.createToken([req.user, 'ad', temp]);
   }
 
-
   /**
-   * Local
+   * local
    *
    * @param {LoginDto} loginDTO
    * @param {*} req
    * @returns
    * @memberof AuthController
    */
-  @Post('login/local')
-  @ApiOperation({ title: 'Login email', description: 'Login email' })
+  @Post('login/email')
+  @ApiOperation({ title: 'Login email' })
   @UseGuards(AuthGuard('local'))
   public async local(@Body() loginDTO: LoginDto, @Req() req) {
-    return await this.authService.createToken([req.user, 'local']);
+    let temp = await this.getRole([req.user]);
+    return await this.authService.createToken([req.user, 'local', temp]);
+  }
+
+  public async getRole([user]: [any]) {
+    let roleProcess = this.authService.userprofileDbService.findByFilterV2(['ROLE_GUID'], [`(USER_GUID=${user.USER_GUID})`]).pipe(
+      mergeMap(res => {
+        if (res[0].ROLE_GUID != null && res[0].ROLE_GUID != '') {
+          return this.roleService.findAll(res[0].ROLE_GUID).pipe(
+            map(res => {
+              let details = convertXMLToJson(res[0].PROPERTIES_XML);
+              return details.property.allowProfileManagement.allowProfileAdmin;
+            })
+          );
+        } else {
+          return of({ value: false, level: '' });
+        }
+      })
+    );
+
+    let data = await runServiceCallback(roleProcess);
+
+    return data;
   }
 
 }

@@ -4,13 +4,14 @@ import { AuthService } from './auth.service';
 import { LocalStrategy } from './passport/local.strategy';
 import { JwtStrategy } from './passport/jwt.strategy';
 import { ActiveDirectoryStrategy } from './passport/ad.strategy';
-import { AuthDbService } from './auth.db.service';
 import { getModuleHttp } from '../common/helper/basic-function';
-import { ProfileDefaultDbService } from './profile-default.db.service';
 import { QueryParserService } from '../common/helper/query-parser-service';
 import { UserService } from '../user/user.service';
 import { UserModule } from '../user/user.module';
 import { PassportModule } from '@nestjs/passport';
+import { ProfileDefaultDbService, AuthDbService, UserprofileDbService, UserDbService } from '../common/db/table.db.service';
+import { RoleService } from '../auth/role.service';
+import { RoleDbService } from '../common/db/table.db.service';
 
 /**
  * Module for auth
@@ -27,7 +28,11 @@ import { PassportModule } from '@nestjs/passport';
     ActiveDirectoryStrategy,
     JwtStrategy,
     AuthDbService,
-    ProfileDefaultDbService
+    ProfileDefaultDbService,
+    UserprofileDbService,
+    UserDbService,
+    RoleService,
+    RoleDbService
   ],
   controllers: [
     AuthController
