@@ -76,8 +76,10 @@ export class AuthController {
 
         this.profileDefaultDbService.httpService.post(url, loginDTO).subscribe(
           data => {
+            console.log(data.data);
             result.send(data.data);
           }, err => {
+            console.log(err);
             result.status(HttpStatus.UNAUTHORIZED).send(new UnauthorizedException('Invalid Credential'));
           }
         );
