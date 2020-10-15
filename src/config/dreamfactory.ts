@@ -1,3 +1,7 @@
+/** dot env library */
+const dotenv = require('dotenv');
+dotenv.config();
+
 /**
  * Dream factory master setup
  *

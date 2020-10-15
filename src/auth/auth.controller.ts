@@ -56,10 +56,10 @@ export class AuthController {
     // let baseUrlLogin = 'http://localhost:3000/api/auth/login/';
     let urlAD = baseUrlLogin + 'ad';
     let urlLocal = baseUrlLogin + 'email';
-    console.log(urlAD + '-' + urlLocal);
+    // console.log(urlAD + '-' + urlLocal);
     // console.log(loginDTO.email + '-' + loginDTO.password);
 
-    this.authService.userService.userDbService.findByFilterV2(['EMAIL', 'TENANT_GUID'], [`(LOGIN_ID=${loginDTO.email})`]).pipe(
+    this.authService.userService.userDbService.findByFilterV2(['EMAIL', 'TENANT_GUID'], [`(LOGIN_ID=${loginDTO.email})`, `(DELETED_AT IS NULL)`]).pipe(
       mergeMap(res => {
         return this.profileDefaultDbService.findByFilterV2([], [`(TENANT_GUID=${res[0].TENANT_GUID})`]);
         // return this.authDbService.findByFilterV2([], [`(SUBSCRIPTION_GUID=${res[0].TENANT_GUID})`]);
@@ -76,7 +76,7 @@ export class AuthController {
 
         this.profileDefaultDbService.httpService.post(url, loginDTO).subscribe(
           data => {
-            console.log(data.data);
+            // console.log(data.data);
             result.send(data.data);
           }, err => {
             console.log(err);
