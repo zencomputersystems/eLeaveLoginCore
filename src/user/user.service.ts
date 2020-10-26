@@ -32,7 +32,7 @@ export class UserService {
   public async findOne(email: string, password: string): Promise<any> {
     const fields = ['USER_GUID', 'EMAIL', 'TENANT_GUID', 'PASSWORD'];
     //const filters = ['(EMAIL='+email+')','(PASSWORD='+CryptoJS.SHA256(password.trim()).toString(CryptoJS.enc.Hex)+')'];
-    const filters = ['(EMAIL=' + email + ')'];
+    const filters = ['(EMAIL=' + email + ')', '(DELETED_AT IS NULL)'];
 
     // console.log(filters);
 
