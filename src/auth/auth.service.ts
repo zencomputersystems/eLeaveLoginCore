@@ -79,31 +79,34 @@ export class AuthService {
    * @memberof AuthService
    */
   public async adLogin(data) {
-
-    return await this.userService.userDbService.findByFilterV2([], ['(LOGIN_ID=' + data._json.userPrincipalName + ')']).toPromise()
-      .then(async user => {
-        let subsId = await this.userprofileDbService.findByFilterV2(['SUBSCRIPTION_GUID'], ['(USER_GUID=' + user[0].USER_GUID + ')']).toPromise();
-        return { user, subsId };
-      })
-      .then(async sub => {
-        let { user, subsId } = sub;
-        let statusTenant = await this.authDbService.findByFilterV2([], ['(CUSTOMER_GUID=' + user[0].TENANT_GUID + ')', '(SUBSCRIPTION_GUID=' + subsId[0].SUBSCRIPTION_GUID + ')']).toPromise();
-        return { user, statusTenant };
-      })
+    // console.log(data);
+    return await this.userService.userDbService.findByFilterV2([], ['(LOGIN_ID=' + data._json.userPrincipalName + ')', '(DELETED_AT IS NULL)']).toPromise()
+      // .then(async user => {
+      //   console.log(user);
+      //   let subsId = await this.userprofileDbService.findByFilterV2(['SUBSCRIPTION_GUID'], ['(USER_GUID=' + user[0].USER_GUID + ')']).toPromise();
+      //   console.log(subsId);
+      //   return { user, subsId };
+      // })
+      // .then(async sub => {
+      //   let { user, subsId } = sub;
+      //   let statusTenant = await this.authDbService.findByFilterV2([], ['(CUSTOMER_GUID=' + user[0].TENANT_GUID + ')', '(SUBSCRIPTION_GUID=' + subsId[0].SUBSCRIPTION_GUID + ')']).toPromise();
+      //   return { user, statusTenant };
+      // })
       // .then(async user => {
       //   let statusTenant = await this.authDbService.findByFilterV2([], ['(SUBSCRIPTION_GUID=' + user[0].TENANT_GUID + ')']).toPromise();
       //   return { user, statusTenant };
       // })
-      .then(async result => {
-        let { user, statusTenant } = result;
-        if (statusTenant[0].STATUS == 1) {
-          return (user.length > 0)
-            ? Promise.resolve(user[0])
-            : Promise.reject(new UnauthorizedException('Invalid Credential'))
-        }
-        else {
-          return Promise.reject(new UnauthorizedException('Inactive Subscription'))
-        }
+      .then(async user => {
+        // .then(async result => {
+        //   let { user, statusTenant } = result;
+        //   if (statusTenant[0].STATUS == 1) {
+        return (user.length > 0)
+          ? Promise.resolve(user[0])
+          : Promise.reject(new UnauthorizedException('Invalid Credential'))
+        // }
+        // else {
+        //   return Promise.reject(new UnauthorizedException('Inactive Subscription'))
+        // }
       })
   }
 
