@@ -74,6 +74,11 @@ export class AuthController {
           url = urlLocal;
         }
 
+        // Temporary
+        if (data[0].TENANT_GUID == '47d37b80-0939-11eb-a3e1-69ed81de408c' && !loginDTO.email.includes('@zen.com.my')) {
+          url = urlLocal;
+        }
+
         this.profileDefaultDbService.httpService.post(url, loginDTO).subscribe(
           data => {
             // console.log(data.data);
