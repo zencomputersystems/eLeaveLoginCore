@@ -3,7 +3,7 @@
  */
 export const ldap = {
   url: process.env.LDAP_URL,
-  baseDN: 'DC=zen,DC=com,DC=my',
-  username: 'tarmimi@zen.com.my',
-  password: 'P@ss1234'
+  baseDN: process.env.LDAP_BASE_DN,
+  username: process.env.LDAP_USERNAME,
+  password: process.env.LDAP_PASSWORD
 }
