@@ -80,7 +80,7 @@ export class AuthService {
    */
   public async adLogin(data) {
     // console.log(data);
-    return await this.userService.userDbService.findByFilterV2([], ['(LOGIN_ID=' + data._json.userPrincipalName + ')', '(DELETED_AT IS NULL)']).toPromise()
+    return await this.userService.userDbService.findByFilterV2([], ['(LOGIN_ID=' + data._json.userPrincipalName + ')', '(DELETED_AT IS NULL)', '(ACTIVATION_FLAG=1)']).toPromise()
       // .then(async user => {
       //   console.log(user);
       //   let subsId = await this.userprofileDbService.findByFilterV2(['SUBSCRIPTION_GUID'], ['(USER_GUID=' + user[0].USER_GUID + ')']).toPromise();
